@@ -2,22 +2,7 @@ package waspse.sps
 
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.RegexParsers
-import scala.util.parsing.input.Positional
-
-sealed trait Statement
-sealed trait Expression
-
-case class Assignment(variable: Identifier, value: Expression) extends Statement
-
-sealed trait Number extends Expression with Positional
-case class DoubleLiteral(value: Double) extends Number
-case class IntLiteral(value: Int) extends Number
-
-case class Identifier(id: String) extends Expression with Positional
-case class Constant(name: String) extends Expression with Positional
-case class FunctionCall(function: Identifier, arguments: List[Expression]) extends Statement with Expression
-case class Operator(op: String) extends Positional
-case class BinaryOperation(leftOperand: Expression, operator: Operator, rightOperand: Expression) extends Expression
+import waspse._
 
 object SPSParsers extends RegexParsers {
 
@@ -83,7 +68,7 @@ object SPSParsers extends RegexParsers {
     """\$[a-z]+""".r ^^ Constant
   }
 
-  private def number: Parser[Number] = doubleLiteral | intLiteral
+  private def number: Parser[waspse.Number] = doubleLiteral | intLiteral
 
   private def doubleLiteral: Parser[DoubleLiteral] = positioned {
     """[0-9]+\.[0-9]+""".r ^^ { f => DoubleLiteral(f.toDouble) }
