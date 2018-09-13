@@ -7,8 +7,16 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     val inputFile = args(0)
-    val input =  new ArrayCharSequence(Source.fromFile(inputFile).toArray[Char])
-    val statements = SPSParsers(input)
-    statements foreach println
+    println(">>> " + inputFile)
+    val input = new ArrayCharSequence(Source.fromFile(inputFile).toArray[Char])
+    val spsStatements = SPSParsers(input)
+    val transformed = Transformer.transform(spsStatements)
+    val written = ScalaWriter.write(transformed)
+
+//    println(spsStatements)
+//    println()
+//    println(transformed)
+//    println()
+    written.foreach(println)
   }
 }

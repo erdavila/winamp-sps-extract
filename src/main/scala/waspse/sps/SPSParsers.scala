@@ -8,9 +8,9 @@ object SPSParsers extends RegexParsers {
 
   override protected val whiteSpace: Regex = """(\s|//.*|/\*(\r|\n|.)*?\*/)+""".r
 
-  def apply(input: CharSequence): List[Statement] =
+  def apply(input: CharSequence): BlockStatement =
     parseAll(sps, input) match {
-      case Success(result, _) => result
+      case Success(statements, _) => BlockStatement(statements)
       case ns: NoSuccess => sys.error(ns.toString)
     }
 
