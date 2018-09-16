@@ -157,7 +157,7 @@ object ScalaWriter {
       //          (all other special characters)
     }
 
-  private implicit class StringOps(val string: String) extends AnyVal {
+  implicit class StringOps(val string: String) extends AnyVal {
     def indented: String =
       "  " + string
 
@@ -168,7 +168,7 @@ object ScalaWriter {
       List(string) +/+ that
   }
 
-  private implicit class StringListOps(val stringList: List[String]) extends AnyVal {
+  implicit class StringListOps(val stringList: List[String]) extends AnyVal {
     def indented: List[String] =
       stringList map { _.indented }
 
