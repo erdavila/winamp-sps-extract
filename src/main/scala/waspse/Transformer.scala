@@ -4,14 +4,6 @@ import scala.util.parsing.input.Position
 
 object Transformer {
 
-  private val FunctionNameTranslation = Map(
-    "cos" -> "math.cos",
-    "max" -> "math.max",
-    "megabuf" -> "megabuf",
-    "min" -> "math.min",
-    "sin" -> "math.sin",
-  )
-
   def transform(statement: Statement): Statement =
     transformStatement(statement)
 
@@ -72,7 +64,7 @@ object Transformer {
   private def transformExpression(expression: Expression): Expression =
     expression match {
       case bo: BinaryOperation => transformBinaryOperation(bo)
-      case c: Constant => c
+      case c: Constant => transformConstant(c)
       case d: DoubleLiteral => d
       case fc: FunctionCall => transformFunctionCallToExpression(fc)
       case id: Identifier => id
@@ -99,6 +91,11 @@ object Transformer {
     toBlockStatement(List(statement1, statement2))
   }
 
+  private def transformConstant(constant: Constant): Constant = {
+    val scalaName = ConstantValue.SPSToScalaName(constant.name)
+    Constant(scalaName)
+  }
+
   private def transformFunctionCallToExpression(functionCall: FunctionCall): Expression =
     functionCall match {
       case FunctionCall(Identifier("assign"), List(variable: Identifier, value)) =>
@@ -115,8 +112,8 @@ object Transformer {
         BinaryOperation(transformExpression(leftOperand), Operator("=="), transformExpression(rightOperand))
       case FunctionCall(Identifier("if"), List(condition, ifTrue, ifFalse)) =>
         IfExpression(transformExpression(condition), transformExpression(ifTrue), transformExpression(ifFalse))
-      case FunctionCall(Identifier(name), arguments) if FunctionNameTranslation.contains(name) =>
-        FunctionCall(Identifier(FunctionNameTranslation(name)), arguments.map(transformExpression))
+      case FunctionCall(Identifier(name), arguments) =>
+        FunctionCall(Identifier(Function.SPSToScalaName(name)), arguments.map(transformExpression))
     }
 
   private def transformIntLiteralToStatement(intLiteral: IntLiteral): Statement = {

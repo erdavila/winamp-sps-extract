@@ -2,7 +2,8 @@ package waspse
 
 import java.io.File
 import waspse.sps.{Decoder, Parsers}
-import waspse.writers.{DecodedSPSWriter, ScalaWriter}
+import waspse.writers.{TypeRequirementsWriter, DecodedSPSWriter, ScalaWriter}
+import waspse.typeInference.TypeRequirementsAnalyzer
 
 object Main {
 
@@ -19,6 +20,9 @@ object Main {
 
     val transformedMethods = methods map Transformer.transform
     ScalaWriter.write(transformedMethods, name, "untyped")
+
+    val varsTypesReqs = TypeRequirementsAnalyzer.analyzeIn(transformedMethods)
+    TypeRequirementsWriter.write(varsTypesReqs, name)
   }
 
   private def removeExtension(fileName: String): String = {
@@ -30,4 +34,3 @@ object Main {
     }
   }
 }
-

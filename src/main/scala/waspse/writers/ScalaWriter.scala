@@ -5,6 +5,7 @@ import waspse._
 object ScalaWriter extends Writer {
 
   private val MethodNames = Seq("initialize", "onSample", "onSliderChange")
+  private val ReadOnlyVars = Seq("nch", "srate")
 
   def write(methods: Seq[Statement], name: String, `type`: String): Unit = {
     val body = (methods zip MethodNames)
@@ -111,9 +112,7 @@ object ScalaWriter extends Writer {
     List("}")
 
   private def write(constant: Constant): List[String] =
-    constant.name match {
-      case "$pi" => List("math.Pi")
-    }
+    List(constant.name)
 
   private def write(functionCall: FunctionCall): List[String] = {
     val funcName = functionCall.function.id match {
