@@ -4,11 +4,11 @@ import scala.util.matching.Regex
 import scala.util.parsing.combinator.RegexParsers
 import waspse._
 
-object SPSParsers extends RegexParsers {
+object Parsers extends RegexParsers {
 
   override protected val whiteSpace: Regex = """(\s|//.*|/\*(\r|\n|.)*?\*/)+""".r
 
-  def apply(input: CharSequence): BlockStatement =
+  def parse(input: CharSequence): BlockStatement =
     parseAll(sps, input) match {
       case Success(statements, _) => BlockStatement(statements)
       case ns: NoSuccess => sys.error(ns.toString)

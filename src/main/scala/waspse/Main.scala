@@ -1,21 +1,27 @@
 package waspse
 
 import java.io.File
-import scala.io.Source
-import waspse.sps.SPSParsers
 import waspse.ScalaWriter.{StringListOps, StringOps}
+import waspse.sps.{DecodedSPSWriter, Decoder, Parsers}
 
 object Main {
 
+  private val OutputDir = "output"
+
   def main(args: Array[String]): Unit = {
-    val presetDir = args(0)
-    val presetName = new File(presetDir).getName
+    val spsFile = args(0)
+    val presetName = removeExtension(new File(spsFile).getName)
     println(">>> " + presetName)
 
-    val initialize = codeToScala(presetDir, "initialize", 0)
-    val onSample = codeToScala(presetDir, "onSample", 1)
-    val onSliderChange = codeToScala(presetDir, "onSliderChange", 2)
+    val outputPath = new File(OutputDir, presetName)
+    outputPath.mkdirs()
 
+    val sps = Decoder.decode(spsFile)
+    DecodedSPSWriter.write(new File(outputPath, "sps.decoded"), sps)
+
+    val initialize = codeToScala(sps.initializationCode, "initialize")
+    val onSliderChange = codeToScala(sps.onSliderChangeCode, "onSliderChange")
+    val onSample = codeToScala(sps.onSampleCode, "onSample")
     val body = initialize ++ List("") ++ onSliderChange ++ List("") ++ onSample
     val `trait` = List("trait `" + presetName + "` {") ++ body.indented ++ List("}")
 
@@ -23,12 +29,17 @@ object Main {
     `trait` foreach println
   }
 
-  private def codeToScala(presetDir: String, methodName: String, i: Int): List[String] = {
-    val fileName = s"code$i.txt"
-    println(">> " + fileName)
-    val inputFile = new File(presetDir, fileName).toString
-    val input = new ArrayCharSequence(Source.fromFile(inputFile).toArray[Char])
-    val spsStatements = SPSParsers(input)
+  private def removeExtension(fileName: String): String = {
+    val pos = fileName.indexOf('.')
+    if (pos >= 0) {
+      fileName.take(pos)
+    } else {
+      fileName
+    }
+  }
+
+  private def codeToScala(code: String, methodName: String): List[String] = {
+    val spsStatements = Parsers.parse(code)
     val transformed = Transformer.transform(spsStatements)
     val written = ScalaWriter.write(transformed)
     ("def " + methodName + "(): Unit = ") +/+ written
