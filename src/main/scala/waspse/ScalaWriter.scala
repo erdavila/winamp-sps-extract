@@ -6,7 +6,7 @@ object ScalaWriter {
 
   private val MethodNames = Seq("initialize", "onSample", "onSliderChange")
 
-  def write(presetDir: File, name: String, `type`: String, methods: Seq[Statement]): Unit = {
+  def write(methods: Seq[Statement], name: String, `type`: String, outputDir: String): Unit = {
     val body = (methods zip MethodNames)
       .map((writeMethod _).tupled)
       .reduce(_ ++ List("") ++ _)
@@ -14,7 +14,9 @@ object ScalaWriter {
     val `trait` = List("trait `" ++ name ++ "` {") ++ body ++ List("}")
     val content = List("package " ++ `type`, "") ++ `trait`
 
-    val w = new PrintWriter(new File(presetDir, `type` + ".scala"))
+    val dir = new File(outputDir, `type`)
+    dir.mkdirs()
+    val w = new PrintWriter(new File(dir, name + ".scala"))
     content foreach w.println
     w.close()
   }

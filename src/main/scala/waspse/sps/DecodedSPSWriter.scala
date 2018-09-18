@@ -6,8 +6,10 @@ object DecodedSPSWriter {
 
   private val CodeSessions = Seq("Initialization Code", "On Sample Code", "On Slider Change Code")
 
-  def write(file: File, sps: DecodedSPS): Unit = {
-    val w = new PrintWriter(file)
+  def write(sps: DecodedSPS, name: String, outputDir: String): Unit = {
+    val dir = new File(outputDir, "decoded-sps")
+    dir.mkdirs()
+    val w = new PrintWriter(new File(dir, name + ".decoded-sps"))
 
     def printSession(session: String): Unit =
       w.println("/" + ("** " + session + " " + "*" * 80).take(78) + "/")

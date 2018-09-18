@@ -12,17 +12,14 @@ object Main {
     val presetName = removeExtension(new File(spsFile).getName)
     println(">>> " + presetName)
 
-    val presetDir = new File(OutputDir, presetName)
-    presetDir.mkdirs()
-
     val sps = Decoder.decode(spsFile)
-    DecodedSPSWriter.write(new File(presetDir, "sps.decoded"), sps)
+    DecodedSPSWriter.write(sps, presetName, OutputDir)
 
     val methods = sps.codes map Parsers.parse
-    ScalaWriter.write(presetDir, presetName, "parsed", methods)
+    ScalaWriter.write(methods, presetName, "parsed", OutputDir)
 
     val transformedMethods = methods map Transformer.transform
-    ScalaWriter.write(presetDir, presetName, "transformed", transformedMethods)
+    ScalaWriter.write(transformedMethods, presetName, "transformed", OutputDir)
   }
 
   private def removeExtension(fileName: String): String = {
