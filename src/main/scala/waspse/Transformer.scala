@@ -3,6 +3,15 @@ package waspse
 import scala.util.parsing.input.Position
 
 object Transformer {
+
+  private val FunctionNameTranslation = Map(
+    "cos" -> "math.cos",
+    "max" -> "math.max",
+    "megabuf" -> "megabuf",
+    "min" -> "math.min",
+    "sin" -> "math.sin",
+  )
+
   def transform(statement: Statement): Statement =
     transformStatement(statement)
 
@@ -106,8 +115,8 @@ object Transformer {
         BinaryOperation(transformExpression(leftOperand), Operator("=="), transformExpression(rightOperand))
       case FunctionCall(Identifier("if"), List(condition, ifTrue, ifFalse)) =>
         IfExpression(transformExpression(condition), transformExpression(ifTrue), transformExpression(ifFalse))
-      case FunctionCall(Identifier(name), arguments) if Seq("cos", "max", "megabuf", "min", "sin").contains(name) =>
-        FunctionCall(Identifier(name), arguments.map(transformExpression))
+      case FunctionCall(Identifier(name), arguments) if FunctionNameTranslation.contains(name) =>
+        FunctionCall(Identifier(FunctionNameTranslation(name)), arguments.map(transformExpression))
     }
 
   private def transformIntLiteralToStatement(intLiteral: IntLiteral): Statement = {

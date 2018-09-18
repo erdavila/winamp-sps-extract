@@ -11,9 +11,7 @@ case class Slider(
 
 case class DecodedSPS(
   sliders: Seq[Slider],
-  initializationCode: String,
-  onSliderChangeCode: String,
-  onSampleCode: String,
+  codes: Seq[String],
 )
 
 object Decoder {
@@ -36,11 +34,8 @@ object Decoder {
         Slider(name, labelMin, labelMax, value)
       }
 
-    val initializationCode = decodeCode(0, entries)
-    val onSampleCode = decodeCode(1, entries)
-    val onSliderChangeCode = decodeCode(2, entries)
-
-    DecodedSPS(sliders, initializationCode, onSliderChangeCode, onSampleCode)
+    val codes = for (n <- 0 to 2) yield decodeCode(n, entries)
+    DecodedSPS(sliders, codes)
   }
 
   private def decodeCode(i: Int, entries: Map[String, String]): String =

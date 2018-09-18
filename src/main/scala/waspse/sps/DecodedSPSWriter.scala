@@ -4,6 +4,8 @@ import java.io.{File, PrintWriter}
 
 object DecodedSPSWriter {
 
+  private val CodeSessions = Seq("Initialization Code", "On Sample Code", "On Slider Change Code")
+
   def write(file: File, sps: DecodedSPS): Unit = {
     val w = new PrintWriter(file)
 
@@ -29,9 +31,9 @@ object DecodedSPSWriter {
       }
     }
 
-    printCode("Initialization Code", sps.initializationCode)
-    printCode("On Slider Change Code", sps.onSliderChangeCode)
-    printCode("On Sample Code", sps.onSampleCode)
+    for ((session, code) <- CodeSessions zip sps.codes) {
+      printCode(session, code)
+    }
 
     w.close()
 

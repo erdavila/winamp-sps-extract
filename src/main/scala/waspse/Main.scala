@@ -1,7 +1,6 @@
 package waspse
 
 import java.io.File
-import waspse.ScalaWriter.{StringListOps, StringOps}
 import waspse.sps.{DecodedSPSWriter, Decoder, Parsers}
 
 object Main {
@@ -13,20 +12,17 @@ object Main {
     val presetName = removeExtension(new File(spsFile).getName)
     println(">>> " + presetName)
 
-    val outputPath = new File(OutputDir, presetName)
-    outputPath.mkdirs()
+    val presetDir = new File(OutputDir, presetName)
+    presetDir.mkdirs()
 
     val sps = Decoder.decode(spsFile)
-    DecodedSPSWriter.write(new File(outputPath, "sps.decoded"), sps)
+    DecodedSPSWriter.write(new File(presetDir, "sps.decoded"), sps)
 
-    val initialize = codeToScala(sps.initializationCode, "initialize")
-    val onSliderChange = codeToScala(sps.onSliderChangeCode, "onSliderChange")
-    val onSample = codeToScala(sps.onSampleCode, "onSample")
-    val body = initialize ++ List("") ++ onSliderChange ++ List("") ++ onSample
-    val `trait` = List("trait `" + presetName + "` {") ++ body.indented ++ List("}")
+    val methods = sps.codes map Parsers.parse
+    ScalaWriter.write(presetDir, presetName, "parsed", methods)
 
-    println()
-    `trait` foreach println
+    val transformedMethods = methods map Transformer.transform
+    ScalaWriter.write(presetDir, presetName, "transformed", transformedMethods)
   }
 
   private def removeExtension(fileName: String): String = {
@@ -36,12 +32,5 @@ object Main {
     } else {
       fileName
     }
-  }
-
-  private def codeToScala(code: String, methodName: String): List[String] = {
-    val spsStatements = Parsers.parse(code)
-    val transformed = Transformer.transform(spsStatements)
-    val written = ScalaWriter.write(transformed)
-    ("def " + methodName + "(): Unit = ") +/+ written
   }
 }
