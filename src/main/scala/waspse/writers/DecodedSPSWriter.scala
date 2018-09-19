@@ -1,15 +1,13 @@
-package waspse.sps
+package waspse.writers
 
-import java.io.{File, PrintWriter}
+import waspse.sps.DecodedSPS
 
-object DecodedSPSWriter {
+object DecodedSPSWriter extends Writer {
 
   private val CodeSessions = Seq("Initialization Code", "On Sample Code", "On Slider Change Code")
 
-  def write(sps: DecodedSPS, name: String, outputDir: String): Unit = {
-    val dir = new File(outputDir, "decoded-sps")
-    dir.mkdirs()
-    val w = new PrintWriter(new File(dir, name + ".decoded-sps"))
+  def write(sps: DecodedSPS, name: String): Unit = {
+    val w = getPrintWriter(name, "decoded-sps", ".txt")
 
     def printSession(session: String): Unit =
       w.println("/" + ("** " + session + " " + "*" * 80).take(78) + "/")
@@ -38,6 +36,5 @@ object DecodedSPSWriter {
     }
 
     w.close()
-
   }
 }

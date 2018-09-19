@@ -1,25 +1,24 @@
 package waspse
 
 import java.io.File
-import waspse.sps.{DecodedSPSWriter, Decoder, Parsers}
+import waspse.sps.{Decoder, Parsers}
+import waspse.writers.{DecodedSPSWriter, ScalaWriter}
 
 object Main {
 
-  private val OutputDir = "output"
-
   def main(args: Array[String]): Unit = {
     val spsFile = args(0)
-    val presetName = removeExtension(new File(spsFile).getName)
-    println(">>> " + presetName)
+    val name = removeExtension(new File(spsFile).getName)
+    println(">>> " + name)
 
     val sps = Decoder.decode(spsFile)
-    DecodedSPSWriter.write(sps, presetName, OutputDir)
+    DecodedSPSWriter.write(sps, name)
 
     val methods = sps.codes map Parsers.parse
-    ScalaWriter.write(methods, presetName, "parsed", OutputDir)
+    ScalaWriter.write(methods, name, "parsed")
 
     val transformedMethods = methods map Transformer.transform
-    ScalaWriter.write(transformedMethods, presetName, "transformed", OutputDir)
+    ScalaWriter.write(transformedMethods, name, "untyped")
   }
 
   private def removeExtension(fileName: String): String = {
@@ -31,3 +30,4 @@ object Main {
     }
   }
 }
+

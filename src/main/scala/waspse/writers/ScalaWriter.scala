@@ -1,12 +1,12 @@
-package waspse
+package waspse.writers
 
-import java.io.{File, PrintWriter}
+import waspse._
 
-object ScalaWriter {
+object ScalaWriter extends Writer {
 
   private val MethodNames = Seq("initialize", "onSample", "onSliderChange")
 
-  def write(methods: Seq[Statement], name: String, `type`: String, outputDir: String): Unit = {
+  def write(methods: Seq[Statement], name: String, `type`: String): Unit = {
     val body = (methods zip MethodNames)
       .map((writeMethod _).tupled)
       .reduce(_ ++ List("") ++ _)
@@ -14,9 +14,7 @@ object ScalaWriter {
     val `trait` = List("trait `" ++ name ++ "` {") ++ body ++ List("}")
     val content = List("package " ++ `type`, "") ++ `trait`
 
-    val dir = new File(outputDir, `type`)
-    dir.mkdirs()
-    val w = new PrintWriter(new File(dir, name + ".scala"))
+    val w = getPrintWriter(name, `type`, ".scala")
     content foreach w.println
     w.close()
   }
