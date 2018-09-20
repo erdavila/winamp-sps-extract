@@ -1,9 +1,10 @@
 package waspse
 
 import java.io.File
+
 import waspse.sps.{Decoder, Parsers}
-import waspse.writers.{TypeRequirementsWriter, DecodedSPSWriter, ScalaWriter}
-import waspse.typeInference.TypeRequirementsAnalyzer
+import waspse.writers.{DecodedSPSWriter, ScalaWriter, TypeInferenceWriter}
+import waspse.typeInference.{TypeInferrer, TypeRequirementsAnalyzer}
 
 object Main {
 
@@ -22,7 +23,16 @@ object Main {
     ScalaWriter.write(transformedMethods, name, "untyped")
 
     val varsTypesReqs = TypeRequirementsAnalyzer.analyzeIn(transformedMethods)
-    TypeRequirementsWriter.write(varsTypesReqs, name)
+    val inferrer = new TypeInferrer(varsTypesReqs)
+    val inferredVarsTypes = inferrer.infer()
+    val defaultTypedVars = inferrer.defaultTypedVars(inferredVarsTypes.keySet)
+    TypeInferenceWriter.write(varsTypesReqs, inferredVarsTypes, defaultTypedVars, name)
+
+/*
+    val varsTypes = inferredVarsTypes ++ defaultTypedVars
+    val typedMethods = transformedMethods map ExpressionTypeAdapter.adaptIn(_, varsTypes)
+    ScalaWriter.write(typedMethods, name, "typed", varsTypes)
+*/
   }
 
   private def removeExtension(fileName: String): String = {
