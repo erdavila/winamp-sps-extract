@@ -1,18 +1,28 @@
 package waspse.writers
 
 import waspse._
+import waspse.typeInference.{BooleanType, DoubleType, IntType, Type}
 
 object ScalaWriter extends Writer {
 
   private val MethodNames = Seq("initialize", "onSample", "onSliderChange")
-  private val ReadOnlyVars = Seq("nch", "srate")
 
-  def write(methods: Seq[Statement], name: String, `type`: String): Unit = {
-    val body = (methods zip MethodNames)
+  def write(methods: Seq[Statement], name: String, `type`: String): Unit =
+    write(methods, None, name, `type`)
+
+  def write(methods: Seq[Statement], varsTypes: Map[String, Type], name: String, `type`: String): Unit =
+    write(methods, Some(varsTypes), name, `type`)
+
+  private def write(methods: Seq[Statement], varsTypes: Option[Map[String, Type]], name: String, `type`: String): Unit = {
+    val methodsDecls = (methods zip MethodNames)
       .map((writeMethod _).tupled)
       .reduce(_ ++ List("") ++ _)
-      .indented
-    val `trait` = List("trait `" ++ name ++ "` {") ++ body ++ List("}")
+
+    val body = varsTypes.toList.flatMap { varsTypes =>
+      customVarsDecls(varsTypes) ++ List("") ++ megabufTraitDecl ++ List("") ++ predefinedVarsDecls ++ List("")
+    } ++ methodsDecls
+
+    val `trait` = List("trait `" ++ name ++ "` {") ++ body.indented ++ List("}")
     val content = List("package " ++ `type`, "") ++ `trait`
 
     val w = getPrintWriter(name, `type`, ".scala")
@@ -20,10 +30,41 @@ object ScalaWriter extends Writer {
     w.close()
   }
 
-  private def writeMethod(statement: Statement, name: String): List[String] = {
-    val written = ScalaWriter.write(statement)
-    ("def " + name + "(): Unit = ") +/+ written
-  }
+  private def writeMethod(statement: Statement, name: String): List[String] =
+    ("def " + name + "(): Unit = ") +/+ write(statement)
+
+  private def customVarsDecls(varsTypes: Map[String, Type]): List[String] =
+    writeVarsDecls {
+      for ((name, typ) <- varsTypes)
+      yield (name, typ, false)
+    }
+
+  private def predefinedVarsDecls: List[String] =
+    writeVarsDecls {
+      ("megabuf", "Megabuf", true) +:
+        { for ((name, typ) <- PredefinedVars.All.toSeq) yield (name, typ, PredefinedVars.ReadOnly.contains(name)) }
+    }
+
+  private def writeVarsDecls(varsTypes: Iterable[(String, Any, Boolean)]): List[String] =
+    for ((variable, typ, readOnly) <- varsTypes.toList.sortBy { case (name, _, _) => name })
+    yield {
+      val decl = if (readOnly) "val" else "var"
+      val typeName = typ match {
+        case BooleanType => "Boolean"
+        case IntType => "Int"
+        case DoubleType => "Double"
+        case t: String => t
+      }
+      decl + " " + variable + ": " + typeName
+    }
+
+  private def megabufTraitDecl: List[String] =
+    List(
+      "trait Megabuf {",
+      "  def apply(index: Int): Double",
+      "  def update(index: Int, value: Double): Unit",
+      "}",
+    )
 
   private def write(statement: Statement): List[String] =
     statement match {
@@ -68,12 +109,14 @@ object ScalaWriter extends Writer {
     expression match {
       case bo: BinaryOperation => write(bo)
       case be: BlockExpression => write(be)
+      case BooleanLiteral(value) => List(value.toString)
       case c: Constant => write(c)
       case DoubleLiteral(value) => List(value.toString)
       case fc: FunctionCall => write(fc)
       case Identifier(id) => List(id)
       case ie: IfExpression => write(ie)
       case IntLiteral(value) => List(value.toString)
+      case mc: MethodCall => write(mc)
       case not: Not => write(not)
     }
 
@@ -86,17 +129,21 @@ object ScalaWriter extends Writer {
         case _: Identifier => false
         case _: IfExpression => true
         case _: IntLiteral => false
+        case _: MethodCall => false
         case _: Not => false
       }
     }
     val maybeParenthesizedRightOperand = parenthesizerIf {
       binaryOperation.rightOperand match {
         case rOp: BinaryOperation => precedence(binaryOperation) >= precedence(rOp)
+        case _: BooleanLiteral => false
         case _: Constant => false
         case _: DoubleLiteral => false
         case _: FunctionCall => false
         case _: Identifier => false
+        case _: IfExpression => true
         case _: IntLiteral => false
+        case _: MethodCall => false
         case _: Not => false
       }
     }
@@ -128,6 +175,7 @@ object ScalaWriter extends Writer {
     def isSimple(expression: Expression): Boolean =
       expression match {
         case BinaryOperation(l, _, r) => isSimple(l) && isSimple(r)
+        case _: BooleanLiteral => true
         case _: DoubleLiteral => true
         case _: Identifier => true
         case _: IntLiteral => true
@@ -144,6 +192,16 @@ object ScalaWriter extends Writer {
       case ifFalse => write(ifFalse)
     }
     conditionLine +/+ ifTrueWritten +/+ " else " +/+ ifFalseWritten
+  }
+
+  private def write(methodCall: MethodCall): List[String] = {
+    val maybeParenthesize = parenthesizerIf {
+      methodCall.`object` match {
+        case _: BinaryOperation => true
+        case _: Identifier => false
+      }
+    }
+    maybeParenthesize(write(methodCall.`object`)) +/+ "." +/+ methodCall.method
   }
 
   private def write(not: Not): List[String] = {

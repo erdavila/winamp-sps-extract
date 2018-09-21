@@ -8,7 +8,7 @@ class TypeInferrer(varsTypesReqs: Map[String, TypeRequirements]) {
   private type VarsTypes = Map[String, Type]
 
   def infer(): VarsTypes =
-    inferMissingVarsTypes(alreadyInferredVarsTypes = PredefinedVars.List)
+    inferMissingVarsTypes(alreadyInferredVarsTypes = PredefinedVars.All) -- PredefinedVars.All.keySet
 
   @tailrec
   private def inferMissingVarsTypes(alreadyInferredVarsTypes: VarsTypes): VarsTypes = {

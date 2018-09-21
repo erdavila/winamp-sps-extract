@@ -7,7 +7,7 @@ object TypeRequirementsAnalyzer {
   private type TypeReqsMap = Map[String, TypeRequirements]
 
   def analyzeIn(methods: Seq[Statement]): TypeReqsMap =
-    methods.map(analyzeStatement).reduce(_ +++ _) -- PredefinedVars.List.keys
+    methods.map(analyzeStatement).reduce(_ +++ _) -- PredefinedVars.All.keys
 
   private def analyzeStatement(statement: Statement): TypeReqsMap =
     statement match {

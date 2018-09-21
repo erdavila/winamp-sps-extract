@@ -28,11 +28,9 @@ object Main {
     val defaultTypedVars = inferrer.defaultTypedVars(inferredVarsTypes.keySet)
     TypeInferenceWriter.write(varsTypesReqs, inferredVarsTypes, defaultTypedVars, name)
 
-/*
     val varsTypes = inferredVarsTypes ++ defaultTypedVars
-    val typedMethods = transformedMethods map ExpressionTypeAdapter.adaptIn(_, varsTypes)
-    ScalaWriter.write(typedMethods, name, "typed", varsTypes)
-*/
+    val typedMethods = transformedMethods map { new ExpressionTypeAdapter(varsTypes).adaptIn }
+    ScalaWriter.write(typedMethods, varsTypes, name, "typed")
   }
 
   private def removeExtension(fileName: String): String = {

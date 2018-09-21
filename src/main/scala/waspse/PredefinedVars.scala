@@ -1,9 +1,11 @@
 package waspse
 
-import waspse.typeInference.{BooleanType, DoubleType, IntType}
+import waspse.typeInference.{BooleanType, DoubleType, IntType, Type}
+
+case class PredefinedVars(`type`: Type, readOnly: Boolean = false)
 
 object PredefinedVars {
-  val List = Map(
+  val All = Map(
     "nch" -> IntType,
     "srate" -> IntType,
     "slider1" -> DoubleType,
@@ -19,4 +21,6 @@ object PredefinedVars {
     "skip" -> BooleanType,
     "repeat" -> BooleanType,
   )
+
+  val ReadOnly = Set("nch", "srate")
 }

@@ -23,3 +23,6 @@ case class IfExpression(condition: Expression, ifTrue: Expression, ifFalse: Expr
 case class IfStatement(condition: Expression, ifTrue: Statement, ifFalse: Option[Statement]) extends Statement
 case class MegabufAssignment(index: Expression, value: Expression) extends Statement
 case class Not(value: Expression) extends Expression
+
+case class MethodCall(`object`: Expression, method: String) extends Expression
+case class BooleanLiteral(value: Boolean) extends Expression
