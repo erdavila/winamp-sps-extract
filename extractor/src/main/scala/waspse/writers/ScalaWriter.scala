@@ -5,7 +5,13 @@ import waspse.typeInference.{BooleanType, DoubleType, IntType, Type}
 
 object ScalaWriter extends Writer {
 
-  private val MethodNames = Seq("initialize", "onSample", "onSliderChange")
+  private val MethodsAndArgType = Seq(
+    ("initialize", "InitializeContext"),
+    ("onSample", "SampleContext"),
+    ("onSliderChange", "SliderChangeContext"),
+  )
+
+  private val ContextArg = "ctx"
 
   def write(methods: Seq[Statement], name: String, `type`: String): Unit =
     write(methods, None, name, `type`)
@@ -14,57 +20,35 @@ object ScalaWriter extends Writer {
     write(methods, Some(varsTypes), name, `type`)
 
   private def write(methods: Seq[Statement], varsTypes: Option[Map[String, Type]], name: String, `type`: String): Unit = {
-    val methodsDecls = (methods zip MethodNames)
-      .map((writeMethod _).tupled)
+    val methodsDecls = (methods zip MethodsAndArgType)
+      .map { case (methodStmt, (methodName, argType)) => writeMethod(methodStmt, methodName, argType) }
       .reduce(_ ++ List("") ++ _)
 
     val body = varsTypes.toList.flatMap { varsTypes =>
-      customVarsDecls(varsTypes) ++ List("") ++ megabufTraitDecl ++ List("") ++ predefinedVarsDecls ++ List("")
+      writeVarsDecls(varsTypes) ++ List("")
     } ++ methodsDecls
 
-    val `trait` = List("trait `" ++ name ++ "` {") ++ body.indented ++ List("}")
-    val content = List("package " ++ `type`, "") ++ `trait`
+    val `class` = List("class `" ++ name ++ "` extends DSPScript {") ++ body.indented ++ List("}")
+    val content = List("package " ++ `type`, "", "import player.script._", "") ++ `class`
 
     val w = getPrintWriter(name, `type`, ".scala")
     content foreach w.println
     w.close()
   }
 
-  private def writeMethod(statement: Statement, name: String): List[String] =
-    ("def " + name + "(): Unit = ") +/+ write(statement)
+  private def writeMethod(statement: Statement, name: String, argType: String): List[String] =
+    ("def " + name + "(" + ContextArg + ": " + argType + "): Unit = ") +/+ write(statement)
 
-  private def customVarsDecls(varsTypes: Map[String, Type]): List[String] =
-    writeVarsDecls {
-      for ((name, typ) <- varsTypes)
-      yield (name, typ, false)
-    }
-
-  private def predefinedVarsDecls: List[String] =
-    writeVarsDecls {
-      ("megabuf", "Megabuf", true) +:
-        { for ((name, typ) <- PredefinedVars.All.toSeq) yield (name, typ, PredefinedVars.ReadOnly.contains(name)) }
-    }
-
-  private def writeVarsDecls(varsTypes: Iterable[(String, Any, Boolean)]): List[String] =
-    for ((variable, typ, readOnly) <- varsTypes.toList.sortBy { case (name, _, _) => name })
+  private def writeVarsDecls(varsTypes: Map[String, Type]): List[String] =
+    for ((variable, typ) <- varsTypes.toList.sortBy { case (name, _) => name })
     yield {
-      val decl = if (readOnly) "val" else "var"
-      val typeName = typ match {
-        case BooleanType => "Boolean"
-        case IntType => "Int"
-        case DoubleType => "Double"
-        case t: String => t
+      val (typeName, initialValue) = typ match {
+        case BooleanType => ("Boolean", "false")
+        case IntType => ("Int", "0")
+        case DoubleType => ("Double", "0.0")
       }
-      decl + " " + variable + ": " + typeName
+      "private var " + variable + ": " + typeName + " = " + initialValue
     }
-
-  private def megabufTraitDecl: List[String] =
-    List(
-      "trait Megabuf {",
-      "  def apply(index: Int): Double",
-      "  def update(index: Int, value: Double): Unit",
-      "}",
-    )
 
   private def write(statement: Statement): List[String] =
     statement match {
@@ -76,7 +60,7 @@ object ScalaWriter extends Writer {
     }
 
   private def write(assignment: Assignment): List[String] =
-    assignment.variable.id +/+ " = " +/+ write(assignment.value)
+    prefixedVarName(assignment.variable.id) +/+ " = " +/+ write(assignment.value)
 
   private def write(block: BlockStatement): List[String] =
     List("{") ++
@@ -103,7 +87,7 @@ object ScalaWriter extends Writer {
   }
 
   private def write(megabufAssignment: MegabufAssignment): List[String] =
-    "megabuf(" +/+ write(megabufAssignment.index) +/+ ") = " +/+ write(megabufAssignment.value)
+    ContextArg + ".megabuf(" +/+ write(megabufAssignment.index) +/+ ") = " +/+ write(megabufAssignment.value)
 
   private def write(expression: Expression): List[String] =
     expression match {
@@ -113,7 +97,7 @@ object ScalaWriter extends Writer {
       case c: Constant => write(c)
       case DoubleLiteral(value) => List(value.toString)
       case fc: FunctionCall => write(fc)
-      case Identifier(id) => List(id)
+      case id: Identifier => write(id)
       case ie: IfExpression => write(ie)
       case IntLiteral(value) => List(value.toString)
       case mc: MethodCall => write(mc)
@@ -164,10 +148,14 @@ object ScalaWriter extends Writer {
   private def write(functionCall: FunctionCall): List[String] = {
     val funcName = functionCall.function.id match {
       case "if" => "`if`"
+      case "megabuf" => ContextArg + ".megabuf"
       case name => name
     }
     funcName +/+ "(" +/+ functionCall.arguments.map(write).reduce(_ +/+ ", " +/+ _) +/+ ")"
   }
+
+  private def write(identifier: Identifier): List[String] =
+    List(prefixedVarName(identifier.id))
 
   private def write(ifExpression: IfExpression): List[String] = {
     val conditionLine = "if (" +/+ write(ifExpression.condition) +/+ ") "
@@ -213,6 +201,9 @@ object ScalaWriter extends Writer {
     }
     "!" +/+ maybeParenthesize(write(not.value))
   }
+
+  private def prefixedVarName(varName: String): String =
+    PredefinedVars.All.get(varName).map(_ => ContextArg + ".").getOrElse("") + varName
 
   private def parenthesizerIf(condition: Boolean): List[String] => List[String] =
     if (condition) {

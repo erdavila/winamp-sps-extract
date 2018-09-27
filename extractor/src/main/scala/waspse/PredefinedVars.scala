@@ -21,6 +21,4 @@ object PredefinedVars {
     "skip" -> BooleanType,
     "repeat" -> BooleanType,
   )
-
-  val ReadOnly = Set("nch", "srate")
 }
