@@ -19,17 +19,17 @@ object Main {
     val methods = sps.codes map Parsers.parse
     ScalaWriter.write(methods, name, "parsed")
 
-    val transformedMethods = methods map Transformer.transform
-    ScalaWriter.write(transformedMethods, name, "untyped")
+    val normalizedMethods = methods map Normalizer.normalize
+    ScalaWriter.write(normalizedMethods, name, "untyped")
 
-    val varsTypesReqs = TypeRequirementsAnalyzer.analyzeIn(transformedMethods)
+    val varsTypesReqs = TypeRequirementsAnalyzer.analyzeIn(normalizedMethods)
     val inferrer = new TypeInferrer(varsTypesReqs)
     val inferredVarsTypes = inferrer.infer()
     val defaultTypedVars = inferrer.defaultTypedVars(inferredVarsTypes.keySet)
     TypeInferenceWriter.write(varsTypesReqs, inferredVarsTypes, defaultTypedVars, name)
 
     val varsTypes = inferredVarsTypes ++ defaultTypedVars
-    val typedMethods = transformedMethods map { new ExpressionTypeAdapter(varsTypes).adaptIn }
+    val typedMethods = normalizedMethods map { new ExpressionTypeAdapter(varsTypes).adaptIn }
     ScalaWriter.write(typedMethods, varsTypes, name, "typed")
   }
 
