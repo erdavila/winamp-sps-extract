@@ -16,6 +16,7 @@ lazy val extractor = (project in file("extractor"))
 
 lazy val player = (project in file("player"))
   .settings(
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     Compile / sourceGenerators += Def.task {
       val extractorJarFile = (extractor / Compile / packageBin).value
 //      val rootBaseDirectory = (root / baseDirectory).value // Causes stack overflow :-(
