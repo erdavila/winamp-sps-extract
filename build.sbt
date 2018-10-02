@@ -4,7 +4,7 @@ name := "winamp-sps-extract"
 
 version := "0.1"
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.7"
 
 lazy val root = (project in file("."))
   .aggregate(extractor, player, symbolicExecutor)
@@ -40,7 +40,8 @@ def generateSource(spsFile: File, sourceManagedDir: File, rootBaseDir: File, ext
   val sourceFile = sourceManagedDir / "typed" / scalaName
   if (!sourceFile.exists() || extractorJarFile.lastModified() > sourceFile.lastModified()) {
     println("Generating " + sourceFile)
-    Process(Seq("scala", extractorJarFile.toString, spsFile.toString)).!
+    val result = Process(Seq("scala", extractorJarFile.toString, spsFile.toString)).!
+    assert(result == 0)
     val generatedFile = rootBaseDir / "output" / "typed" / scalaName
     IO.copyFile(generatedFile, sourceFile)
   }
