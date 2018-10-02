@@ -89,7 +89,7 @@ object ScalaWriter extends Writer {
   private def write(megabufAssignment: MegabufAssignment): List[String] =
     ContextArg + ".megabuf(" +/+ write(megabufAssignment.index) +/+ ") = " +/+ write(megabufAssignment.value)
 
-  private def write(expression: Expression): List[String] =
+  def write(expression: Expression): List[String] =
     expression match {
       case bo: BinaryOperation => write(bo)
       case be: BlockExpression => write(be)

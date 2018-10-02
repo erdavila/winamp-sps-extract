@@ -3,7 +3,7 @@ package waspse
 import java.io.File
 
 import waspse.sps.{DecodedSPS, Decoder, Parsers}
-import waspse.typeInference.{TypeInferrer, TypeRequirementsAnalyzer}
+import waspse.typeInference.{Type, TypeInferrer, TypeRequirementsAnalyzer}
 import waspse.writers.{DecodedSPSWriter, ScalaWriter, TypeInferenceWriter}
 
 class Steps(spsPath: String) {
@@ -38,8 +38,9 @@ class Steps(spsPath: String) {
     (inferredVarsTypes, defaultTypedVars)
   }
 
+  lazy val varsTypes: Map[String, Type] = inferredVarsTypes ++ defaultTypedVars
+
   lazy val typedMethods: Seq[Statement] = {
-    val varsTypes = inferredVarsTypes ++ defaultTypedVars
     val typedMethods = normalizedMethods map { new ExpressionTypeAdapter(varsTypes).adaptIn }
     ScalaWriter.write(typedMethods, varsTypes, name, "typed")
     typedMethods

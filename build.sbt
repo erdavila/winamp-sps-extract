@@ -7,7 +7,7 @@ version := "0.1"
 scalaVersion := "2.12.6"
 
 lazy val root = (project in file("."))
-  .aggregate(extractor, player)
+  .aggregate(extractor, player, symbolicExecutor)
 
 lazy val extractor = (project in file("extractor"))
   .settings(
@@ -46,3 +46,6 @@ def generateSource(spsFile: File, sourceManagedDir: File, rootBaseDir: File, ext
   }
   sourceFile
 }
+
+lazy val symbolicExecutor = (project in file("symbolic-executor"))
+  .dependsOn(extractor)
